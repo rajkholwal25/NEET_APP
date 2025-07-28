@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NEET Voice Read-Aloud</title>
+    <!-- Tailwind CSS CDN for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts - Inter for a clean look -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f2f5; /* Light gray background */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        /* Custom scrollbar for text areas */
+        textarea::-webkit-scrollbar {
+            width: 8px;
+        }
+        textarea::-webkit-scrollbar-track {
+            background: #e2e8f0; /* bg-gray-200 */
+            border-radius: 10px;
+        }
+        textarea::-webkit-scrollbar-thumb {
+            background: #94a3b8; /* bg-slate-400 */
+            border-radius: 10px;
+        }
+        textarea::-webkit-scrollbar-thumb:hover {
+            background: #64748b; /* bg-slate-600 */
+        }
+        /* Spinner styles */
+        .spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-left-color: #3b82f6; /* blue-500 */
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="selection:bg-blue-200 selection:text-blue-800">
+
+    <div class="bg-white p-6 md:p-10 rounded-xl shadow-2xl w-full max-w-md lg:max-w-lg text-center border-b-4 border-blue-500 transform transition-all duration-300 hover:scale-[1.01]">
+        <h1 class="text-3xl md:text-4xl font-extrabold text-gray-800 mb-6 flex items-center justify-center">
+            <svg class="w-8 h-8 md:w-10 md:h-10 text-blue-500 mr-3" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                <path fill-rule="evenodd" d="M4 4a2 2 0 00-2 2v4a2 2 0 002 2V6h10a2 2 0 002-2V4a2 2 0 00-2-2H4zm2 6a2 2 0 012-2h8a2 2 0 012 2v4a2 2 0 01-2 2H8a2 2 0 01-2-2v-4zm6 4a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"></path>
+            </svg>
+            NEET Voice Read-Aloud
+        </h1>
+
+        <!-- Question Text Input Section -->
+        <div class="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+            <label for="quiz-text-input" class="block text-left text-blue-800 text-lg font-semibold mb-2">
+                Paste your questions and answers here:
+            </label>
+            <textarea id="quiz-text-input" rows="8"
+                      class="w-full p-3 border border-blue-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-gray-700 resize-y"
+                      placeholder="Example:
+Question 1:- What is the powerhouse of the cell?
+Answer :- Mitochondria
+Question 2:- Which gas do plants absorb during photosynthesis?
+Answer :- Carbon dioxide
+..."></textarea>
+            <button id="process-text-btn"
+                    class="mt-4 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-5 rounded-full shadow-md transition-all duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-blue-300 flex items-center justify-center w-full">
+                <span id="process-btn-text">Load Questions from Text</span>
+                <div id="loading-spinner" class="spinner ml-3 hidden"></div>
+            </button>
+            <p class="text-xs text-blue-600 mt-2 text-left">
+                (Format: "Question X:- ...", "Answer :- ...")
+            </p>
+        </div>
+
+        <!-- Quiz Container -->
+        <div id="quiz-container" class="space-y-6">
+            <p id="question-display" class="text-xl md:text-2xl text-gray-700 font-semibold mb-4 min-h-[80px] flex items-center justify-center">
+                Paste your questions and click "Load Questions" to begin!
+            </p>
+
+            <div class="flex flex-col items-center justify-center space-y-4">
+                <button id="toggle-quiz-btn"
+                        class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-full shadow-lg transition-all duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-blue-300 hidden"
+                        disabled>
+                    Start Quiz
+                </button>
+            </div>
+
+            <div id="answer-display" class="mt-4 p-4 bg-green-50 text-green-800 text-lg rounded-lg border border-green-200 text-left hidden">
+                <!-- Answer will appear here -->
+            </div>
+
+            <!-- Explanation box is now always hidden as per user request -->
+            <div id="explanation-box" class="mt-4 p-4 bg-gray-100 text-gray-700 text-sm rounded-lg border border-gray-200 text-left max-h-40 overflow-y-auto explanation-box hidden">
+                <!-- Explanation will appear here -->
+            </div>
+
+            <!-- Message box for alerts, instead of alert() -->
+            <div id="message-box" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 hidden">
+                <div class="bg-white p-6 rounded-lg shadow-xl text-center max-w-sm w-full">
+                    <p id="message-text" class="text-lg font-semibold text-gray-800 mb-4"></p>
+                    <button id="message-close-btn" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-full">
+                        OK
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- Global Variables and UI Elements ---
+        let currentQuestionIndex = 0;
+        let questions = []; // This will be populated by parsing the input text
+        let quizRunning = false;
+        let quizTimeoutId = null; // To store the ID of the setTimeout for pausing
+
+        const quizTextInput = document.getElementById('quiz-text-input');
+        const processTextBtn = document.getElementById('process-text-btn');
+        const processBtnText = document.getElementById('process-btn-text');
+        const loadingSpinner = document.getElementById('loading-spinner');
+        const questionDisplay = document.getElementById('question-display');
+        const answerDisplay = document.getElementById('answer-display'); // Element for answer
+        const explanationBox = document.getElementById('explanation-box'); // Still exists but will be hidden
+        const toggleQuizBtn = document.getElementById('toggle-quiz-btn');
+        const messageBox = document.getElementById('message-box');
+        const messageText = document.getElementById('message-text');
+        const messageCloseBtn = document.getElementById('message-close-btn');
+
+        // --- Speech Synthesis (TTS) Setup ---
+        const synth = window.speechSynthesis;
+        let currentUtterance = null; // To keep track of the current speech utterance
+
+        // Check if SpeechSynthesis is supported
+        if (!synth) {
+            processTextBtn.disabled = true;
+            toggleQuizBtn.disabled = true;
+            questionDisplay.textContent = "Your browser does not support Web Speech Synthesis. Please use a compatible browser (e.g., Chrome, Edge, Firefox).";
+            showMessage("Your browser does not support Web Speech Synthesis. Please use a compatible browser (e.g., Chrome, Edge, Firefox).");
+        } else {
+            // Ensure voices are loaded before trying to speak
+            synth.onvoiceschanged = () => {
+                console.log("Voices loaded:", synth.getVoices().map(v => v.name));
+            };
+        }
+
+        // Function to speak text using TTS
+        function speak(text, onEndCallback = null) {
+            if (!synth) return;
+
+            // Cancel any ongoing speech before starting a new one
+            if (currentUtterance && synth.speaking) {
+                synth.cancel();
+            }
+
+            currentUtterance = new SpeechSynthesisUtterance(text);
+            currentUtterance.lang = 'en-US'; // Set language
+            currentUtterance.rate = 1.0; // Speed of speech
+            currentUtterance.pitch = 1.0; // Pitch of voice
+
+            // Set the callback for when speech ends
+            currentUtterance.onend = () => {
+                if (onEndCallback) {
+                    onEndCallback();
+                }
+            };
+
+            synth.speak(currentUtterance);
+        }
+
+        // --- Text Parsing Logic ---
+        function parseInputText() {
+            const rawText = quizTextInput.value.trim();
+
+            if (!rawText) {
+                showMessage("Please paste your questions and answers into the text area first!");
+                return;
+            }
+
+            // Show loading state
+            processTextBtn.disabled = true;
+            processBtnText.textContent = 'Loading...';
+            loadingSpinner.classList.remove('hidden');
+            questionDisplay.textContent = "Loading questions, please wait...";
+            toggleQuizBtn.disabled = true;
+            toggleQuizBtn.classList.add('opacity-50', 'cursor-not-allowed');
+            toggleQuizBtn.classList.add('hidden'); // Hide until questions are loaded
+
+            // Use a timeout to allow UI to update before parsing potentially large text
+            setTimeout(() => {
+                const lines = rawText.split('\n').map(line => line.trim()).filter(line => line.length > 0);
+                const parsedQuestions = [];
+                let currentQuestion = null;
+
+                for (const line of lines) {
+                    if (line.toLowerCase().startsWith('question') && line.includes(':-')) {
+                        if (currentQuestion && currentQuestion.question && !currentQuestion.correct_answer) {
+                            // If a question was started but no answer found for the previous one, discard
+                            console.warn("Skipping question without an answer:", currentQuestion.question);
+                        }
+                        const questionText = line.substring(line.indexOf(':-') + 2).trim();
+                        currentQuestion = { question: questionText, correct_answer: '' }; // No explanation needed in data structure
+                    } else if (line.toLowerCase().startsWith('answer') && line.includes(':-')) {
+                        if (currentQuestion) {
+                            const answerText = line.substring(line.indexOf(':-') + 2).trim();
+                            currentQuestion.correct_answer = answerText;
+                            parsedQuestions.push(currentQuestion); // Add to array after answer
+                            currentQuestion = null; // Reset for the next question
+                        } else {
+                            console.warn("Answer found without a preceding question:", line);
+                        }
+                    }
+                    // Explanation lines will be ignored as per new requirement
+                }
+
+                // Handle the very last question if it was incomplete
+                if (currentQuestion && currentQuestion.question && !currentQuestion.correct_answer) {
+                    console.warn("Skipping incomplete last question:", currentQuestion);
+                }
+
+
+                if (parsedQuestions.length > 0) {
+                    questions = parsedQuestions; // No shuffling, keep original order
+                    showMessage(`Successfully loaded ${questions.length} questions! Click 'Start Quiz' to begin.`);
+                    toggleQuizBtn.classList.remove('hidden'); // Show the Start/Pause button
+                    toggleQuizBtn.disabled = false;
+                    toggleQuizBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                    toggleQuizBtn.textContent = 'Start Quiz'; // Ensure it says Start Quiz initially
+                    questionDisplay.textContent = "Questions loaded! Click 'Start Quiz' to begin.";
+                } else {
+                    showMessage("No questions found. Please check your text format. Expected 'Question X:- ...' and 'Answer :- ...'");
+                    questionDisplay.textContent = "No questions found. Please check format.";
+                }
+
+                // Reset loading state
+                processTextBtn.disabled = false;
+                processBtnText.textContent = 'Load Questions from Text';
+                loadingSpinner.classList.add('hidden');
+            }, 100); // Small delay to allow UI to update
+        }
+
+        // --- Quiz Flow Logic ---
+
+        function startQuizFlow() {
+            if (questions.length === 0) {
+                showMessage("No questions available. Please load questions from text first.");
+                toggleQuizBtn.textContent = 'Start Quiz';
+                quizRunning = false;
+                return;
+            }
+
+            quizRunning = true;
+            toggleQuizBtn.textContent = 'Pause Quiz';
+            displayQuestion();
+        }
+
+        function pauseQuizFlow() {
+            quizRunning = false;
+            toggleQuizBtn.textContent = 'Start Quiz';
+            if (synth.speaking) {
+                synth.cancel(); // Stop current speech
+            }
+            clearTimeout(quizTimeoutId); // Clear any pending timeouts
+        }
+
+        function toggleQuiz() {
+            if (quizRunning) {
+                pauseQuizFlow();
+            } else {
+                startQuizFlow();
+            }
+        }
+
+        function displayQuestion() {
+            if (!quizRunning) return; // Stop if paused
+
+            if (currentQuestionIndex < questions.length) {
+                const currentQuestion = questions[currentQuestionIndex];
+
+                // Clear previous displays and hide explanation box
+                answerDisplay.classList.add('hidden');
+                explanationBox.classList.add('hidden'); // Ensure explanation box remains hidden
+                questionDisplay.textContent = `Question ${currentQuestionIndex + 1}: ${currentQuestion.question}`;
+
+                // Speak question
+                speak(`Question ${currentQuestionIndex + 1}: ${currentQuestion.question}`, () => {
+                    if (!quizRunning) return; // Check again after speaking
+
+                    // Short pause (0.5 seconds) before speaking answer
+                    quizTimeoutId = setTimeout(() => {
+                        answerDisplay.textContent = `Answer: ${currentQuestion.correct_answer}`;
+                        answerDisplay.classList.remove('hidden');
+                        speak(`The answer is: ${currentQuestion.correct_answer}.`, () => {
+                            if (!quizRunning) return; // Check again after speaking
+
+                            // Move to next question after answer is spoken (0.5 seconds pause)
+                            quizTimeoutId = setTimeout(nextQuestion, 500);
+                        });
+                    }, 500); // Pause 0.5 seconds before answer
+                });
+
+            } else {
+                endQuiz();
+            }
+        }
+
+        function nextQuestion() {
+            currentQuestionIndex++;
+            displayQuestion(); // Call displayQuestion to continue the loop
+        }
+
+        function endQuiz() {
+            questionDisplay.textContent = `Quiz Over! All ${questions.length} questions have been covered.`;
+            answerDisplay.classList.add('hidden');
+            explanationBox.classList.add('hidden'); // Ensure explanation box remains hidden
+            toggleQuizBtn.disabled = true;
+            toggleQuizBtn.classList.add('opacity-50', 'cursor-not-allowed');
+            toggleQuizBtn.textContent = 'Quiz Finished';
+            speak(`Quiz over! All ${questions.length} questions have been covered.`);
+            quizRunning = false;
+            clearTimeout(quizTimeoutId); // Clear any pending timeouts
+            currentQuestionIndex = 0; // Reset for a potential new quiz load
+        }
+
+        // --- Message Box Function (instead of alert()) ---
+        function showMessage(text) {
+            messageText.textContent = text;
+            messageBox.classList.remove('hidden');
+        }
+
+        // --- Event Listeners ---
+        processTextBtn.addEventListener('click', parseInputText);
+        toggleQuizBtn.addEventListener('click', toggleQuiz); // Use the new toggle button
+
+        messageCloseBtn.addEventListener('click', () => {
+            messageBox.classList.add('hidden');
+        });
+    </script>
+</body>
+</html>
